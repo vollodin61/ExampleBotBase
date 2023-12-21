@@ -18,7 +18,7 @@ async def echo(msg: Message):
 
 async def main():
 	logging.basicConfig(level=logging.INFO)
-	await AsyncORM.create_tables()
+	await AsyncORM.drop_create_tables()
 	await AsyncORM.create_course(name='Номер 1')
 	await AsyncORM.create_course(name='Номер 2')
 	await AsyncORM.create_user(tg_id=3, username='Ilya')

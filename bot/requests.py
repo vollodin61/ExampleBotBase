@@ -3,7 +3,7 @@ import psycopg2
 from aiogram.types import Message
 from sqlalchemy import select
 
-from bot.db_cfg import async_session_factory, Base, async_engine
+from bot.db_cfg import async_session_factory, Base, async_engine, sync_session_factory
 from bot.models import Course, User
 
 
@@ -49,7 +49,7 @@ class AsyncORM:
 			await conn.run_sync(Base.metadata.create_all)
 
 	@staticmethod
-	async def create_tables():  # TODO здесь нужно убрать дроп, наверное
+	async def drop_create_tables():  # TODO здесь нужно убрать дроп, наверное
 		async with async_engine.begin() as conn:
 			await conn.run_sync(Base.metadata.drop_all)
 			await conn.run_sync(Base.metadata.create_all)
@@ -91,15 +91,34 @@ class AsyncORM:
 			await sess.commit()
 
 	@staticmethod
-	async def insert_course_to_user(course: str, tg_id: str):
+	async def insert_course_to_user(course: str, tg_id: int):
 		async with async_session_factory() as sess:
-
 			stmt = select(User).where(User.tg_id == tg_id)
 			user: User | None = await sess.scalar(stmt)
 			c_stmt = select(Course).filter_by(name=course)
 			course: Course | None = await sess.scalar(c_stmt)
-			# await user.courses.append("Сарафанка")  # TODO: тут подследние попытки научиться добавлять курс к пользователю
+			user.courses.append(course)  # TODO: тут подследние попытки научиться добавлять курс к пользователю
 			print(f"{'*' * 88}\n{user = }\n{course = }\n{'*' * 88}")
+			await sess.commit()
 			return user
 
 
+	@staticmethod
+	def sync_insert_course_to_user(course: str, tg_id: int):
+		with sync_session_factory() as sess:
+			stmt = select(User).where(User.tg_id == tg_id)
+			user: User | None = sess.scalar(stmt)
+			c_stmt = select(Course).filter_by(name=course)
+			course: Course | None = sess.scalar(c_stmt)
+			user.courses.append(course)  # TODO: Не работает, потоом выяснить почему
+			print(f"{'*' * 88}\n{user.courses = }\n{course = }\n{'*' * 88}")
+			sess.commit()
+			return user
+
+	@staticmethod
+	def get_user(tg_id: int):
+		with sync_session_factory() as sess:
+			stmt = select(User).where(User.tg_id == tg_id)
+			bobre = sess.scalar(stmt)
+			print(f"{'*' * 88}\n{bobre.courses = }\n{'*' * 88}")
+			return bobre.courses
